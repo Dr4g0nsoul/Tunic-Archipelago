@@ -105,6 +105,10 @@ class Context(CommonContext):
             self.all_in_choice = args["slot_data"]["all_in_map"]
             slot_req_table = args["slot_data"]["mission_req"]
             self.mission_req_table = {}
+            # Compatibility for 0.3.2 server data.
+            if "category" not in next(iter(slot_req_table)):
+                for i, mission_data in enumerate(slot_req_table.values()):
+                    mission_data["category"] = f"Outdated Server {(i+5)//5}"
             for mission in slot_req_table:
                 self.mission_req_table[mission] = MissionInfo(**slot_req_table[mission])
 
