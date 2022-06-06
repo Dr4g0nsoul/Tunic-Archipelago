@@ -4,6 +4,12 @@ from typing import Dict, Set, NamedTuple, List
 
 from BaseClasses import Item
 
+TUNIC_ITEM_ID_OFFSET = 5000
+
+TUNIC_PROGRESSION_ITEMS = [
+    ""
+]
+
 
 class ItemData(NamedTuple):
     name: str
@@ -11,50 +17,40 @@ class ItemData(NamedTuple):
     item_type: str
     progression: bool
 
-TUNIC_PROGRESSION_ITEMS = [
-    ""
-]
-
-TUNIC_ITEM_CATEGORIES_WITHOUT_INGAME_NAME = [
-    ItemData("Money", 1, "MONEY", False),
-    ItemData("Empty Chest", 2, "OTHER", False)
-]
-
 
 class TunicItems:
     _item_table: List[ItemData] = []
     _item_table_lookup: Dict[str, ItemData] = {}
-    _item_table_quantity: Dict[str, int] = {}
 
     def _populate_item_table_from_data(self):
         base_path = Path(__file__).parent
         file_path = (base_path / "data/ItemLocations.json").resolve()
         with open(file_path) as file:
             exported_items = json.load(file)
-            self._item_table = [ItemData(item_type, code, item_type, progression)
-                                for name, code, item_type, progression
-                                in TUNIC_ITEM_CATEGORIES_WITHOUT_INGAME_NAME]
-            self._item_table_lookup = {item.item_type: item for item in self._item_table}
-            self._item_table_quantity = {item.item_type: 0 for item in self._item_table}
+            self._item_table = []
+            self._item_table_lookup = {}
 
-            starting_item_numbering = len(TUNIC_ITEM_CATEGORIES_WITHOUT_INGAME_NAME) + 1
             for tunic_item in exported_items:
+                item_code = len(self._item_table) + TUNIC_ITEM_ID_OFFSET
+                # Normal items
                 if "itemName" in tunic_item and tunic_item["itemName"] not in self._item_table_lookup.keys():
-                    new_item = ItemData(tunic_item["itemName"], starting_item_numbering, tunic_item["itemType"],
+                    new_item_name = f"{tunic_item['itemName']} x {max(tunic_item['itemQuantity'], 1)} " \
+                                    f"[{item_code}]"
+                    new_item = ItemData(new_item_name, item_code, tunic_item["itemType"],
                                         tunic_item["itemName"] in TUNIC_PROGRESSION_ITEMS)
-                    self._item_table.append(new_item)
-                    self._item_table_lookup[tunic_item["itemName"]] = new_item
+                # Special items like Money and Empty Chests
+                if "itemType" in tunic_item:
+                    if tunic_item["itemType"] == "MONEY":
+                        new_item_name = f"{max(tunic_item['moneyQuantity'], 1)}$ [{item_code}]"
+                        new_item = ItemData(new_item_name, item_code, tunic_item["itemType"],
+                                            False)
+                    elif tunic_item["itemType"] == "OTHER":  # FOR NOW IT IS ONLY EMPTY CHESTS
+                        new_item_name = f"Empty [{item_code}]"
+                        new_item = ItemData(new_item_name, item_code, tunic_item["itemType"], False)
 
-                if "itemName" in tunic_item:
-                    if tunic_item["itemName"] in self._item_table_quantity:
-                        self._item_table_quantity[tunic_item["itemName"]] += 1
-                    else:
-                        self._item_table_quantity[tunic_item["itemName"]] = 1
-                elif "itemType" in tunic_item:
-                    if tunic_item["itemType"] in self._item_table_quantity:
-                        self._item_table_quantity[tunic_item["itemType"]] += 1
-                    else:
-                        self._item_table_quantity[tunic_item["itemType"]] = 1
+                # Add item
+                self._item_table.append(new_item)
+                self._item_table_lookup[new_item_name] = new_item
 
     def _get_item_table(self) -> List[ItemData]:
         if not self._item_table or not self._item_table_lookup:
@@ -88,11 +84,6 @@ class TunicItems:
         if not self._item_table or not self._item_table_lookup:
             self._populate_item_table_from_data()
         return [value.name for value in self._item_table]
-
-    def get_item_quantity(self, name) -> int:
-        if not self._item_table or not self._item_table_lookup:
-            self._populate_item_table_from_data()
-        return self._item_table_quantity[name] if name in self._item_table_quantity else 0
 
 
 class TunicItemWrapper(Item):

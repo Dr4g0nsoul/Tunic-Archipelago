@@ -4,6 +4,8 @@ from typing import Dict, Set, NamedTuple, List
 
 from BaseClasses import Location, Region
 
+TUNIC_ITEM_LOCATION_OFFSET = 6000
+
 
 class LocationPositionData(NamedTuple):
     x: float
@@ -37,6 +39,9 @@ class TunicLocations:
     def _populate_location_table_from_data(self):
         base_path = Path(__file__).parent
         file_path = (base_path / "data/ItemLocations.json").resolve()
+
+        self._location_table = []
+        self._location_table_lookup = {}
         with open(file_path) as file:
             exported_locations = json.load(file)
 
@@ -55,7 +60,7 @@ class TunicLocations:
                                          f"({tunic_location['itemType']}) [{tunic_location['instanceId']}]"
                 curr_location = LocationData(
                     curr_location_name,
-                    tunic_location["numericId"],
+                    tunic_location["numericId"] + TUNIC_ITEM_LOCATION_OFFSET,
                     tunic_location["instanceId"],
                     tunic_location["itemName"] if "itemName" in tunic_location else "",
                     curr_location_quantity,

@@ -36,7 +36,7 @@ class TunicWorld(World):
     # data_version is used to signal that items, locations or their names
     # changed. Set this to 0 during development so other games' clients do not
     # cache any texts, then increase by 1 for each release that makes changes.
-    data_version = 1
+    data_version = 0
 
     # ID of first item and location
     base_id_item = 1234
@@ -60,8 +60,7 @@ class TunicWorld(World):
 
     def create_items(self):
         for item_name in self.tunic_items.get_all_item_names():
-            for _ in range(self.tunic_items.get_item_quantity(item_name)):
-                self.world.itempool.append(self.create_item(item_name))
+            self.world.itempool.append(self.create_item(item_name))
 
     def create_regions(self) -> None:
         # Create start region
@@ -87,9 +86,10 @@ class TunicWorld(World):
                     .connect(self.world.get_region(tunic_connection.destination, self.player))
 
     def generate_basic(self):
+        print(self.world.get_locations())
+        print(self.location_name_to_id)
         for locations in self.world.get_locations():
             locations.always_allow = TunicWorld.locations_always_allow
-        print(len(self.world.get_locations()))
 
     @staticmethod
     def locations_always_allow(item, state: False):
